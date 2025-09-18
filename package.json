@@ -1,6 +1,6 @@
 {
   "name": "c2cai",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Website RAG assistant (Sinhala/English/Tamil)",
   "type": "module",
   "main": "./dist/index.js",
@@ -15,10 +15,10 @@
   "bin": {
     "c2cai": "bin/cli.js"
   },
- "scripts": {
-  "build": "tsup src/**/*.ts --format esm,cjs --dts --sourcemap --clean",
-  "prepublishOnly": "npm run build"
-},
+  "scripts": {
+    "build": "tsup src/**/*.ts --format esm,cjs --dts --sourcemap --clean",
+    "prepublishOnly": "npm run build"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.js",
