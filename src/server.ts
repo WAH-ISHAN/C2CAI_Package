@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { loadConfig, env } from "./config.js";
 import { logChat } from "./db.js";
 import { answerWithRAG } from "./rag.js";
+import crypto from "crypto";
 
 export function createC2CAIServer() {
   const cfg = loadConfig();
