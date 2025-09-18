@@ -1,0 +1,14 @@
+{
+  "site": {
+    "baseUrl": "https://your-portfolio.com",
+    "maxPages": 50,
+    "sameDomainOnly": true
+  },
+  "dbPath": ".c2cai/data.sqlite",
+  "topK": 5,
+  "allowLanguages": [
+    "si",
+    "en",
+    "ta"
+  ]
+}
