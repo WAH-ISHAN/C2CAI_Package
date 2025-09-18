@@ -1,7 +1,7 @@
 import {
   cosineSim,
   getAllPages
-} from "./chunk-SAS7MPEH.js";
+} from "./chunk-YGW57ZIY.js";
 
 // src/rag.ts
 async function pickContext(queryVec, topK = 5) {
@@ -10,7 +10,6 @@ async function pickContext(queryVec, topK = 5) {
   return scored.map((x) => x.p);
 }
 async function answerWithRAG(opts) {
-  var _a, _b;
   const { client, model, embedModel, question, pageHint } = opts;
   const qEmb = await client.embeddings.create({ model: embedModel, input: question });
   const contextPages = await pickContext(qEmb.data[0].embedding, 5);
@@ -19,7 +18,7 @@ async function answerWithRAG(opts) {
 URL: ${p.url}
 ${p.content.slice(0, 1200)}`
   ).join("\n\n");
-  const pageCtx = (pageHint == null ? void 0 : pageHint.text) ? `Current Page: ${pageHint.title || ""} (${pageHint.url || ""})
+  const pageCtx = pageHint?.text ? `Current Page: ${pageHint.title || ""} (${pageHint.url || ""})
 ${pageHint.text.slice(0, 1200)}` : "";
   const system = [
     "You are C2CAI, a helpful website assistant.",
@@ -44,7 +43,7 @@ ${pageCtx}` }
     messages,
     temperature: 0.3
   });
-  const answer = ((_b = (_a = resp.choices[0]) == null ? void 0 : _a.message) == null ? void 0 : _b.content) || "Sorry, I couldn't generate an answer.";
+  const answer = resp.choices[0]?.message?.content || "Sorry, I couldn't generate an answer.";
   const sources = contextPages.slice(0, 3).map((p) => `${p.title} \u2014 ${p.url}`);
   return { answer, sources };
 }
@@ -53,3 +52,4 @@ export {
   pickContext,
   answerWithRAG
 };
+//# sourceMappingURL=chunk-CWH5OPNT.js.map

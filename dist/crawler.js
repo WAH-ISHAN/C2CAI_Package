@@ -2,7 +2,6 @@
 import * as cheerio from "cheerio";
 import { URL } from "url";
 async function crawlSite(baseUrl, maxPages = 50, sameDomainOnly = true) {
-  var _a;
   const start = new URL(baseUrl);
   const q = [start.href];
   const seen = /* @__PURE__ */ new Set();
@@ -13,7 +12,7 @@ async function crawlSite(baseUrl, maxPages = 50, sameDomainOnly = true) {
     seen.add(u);
     try {
       const res = await fetch(u, { headers: { "User-Agent": "C2CAI/0.1" } });
-      if (!res.ok || !((_a = res.headers.get("content-type")) == null ? void 0 : _a.includes("text/html"))) continue;
+      if (!res.ok || !res.headers.get("content-type")?.includes("text/html")) continue;
       const html = await res.text();
       const $ = cheerio.load(html);
       $("script,style,noscript").remove();
@@ -40,3 +39,4 @@ async function crawlSite(baseUrl, maxPages = 50, sameDomainOnly = true) {
 export {
   crawlSite
 };
+//# sourceMappingURL=crawler.js.map

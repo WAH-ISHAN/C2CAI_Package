@@ -1,3 +1,4 @@
+"use strict";
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -68,3 +69,4 @@ function cosineSim(a, b) {
   logChat,
   upsertPage
 });
+//# sourceMappingURL=db.cjs.map

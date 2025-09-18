@@ -22,7 +22,7 @@ function C2CAIWidget(opts) {
   const send = panel.querySelector("#c2cai-send");
   function pageContext() {
     const main = document.querySelector("main") || document.body;
-    const txt = ((main == null ? void 0 : main.textContent) || "").replace(/\s+/g, " ").trim().slice(0, 4e3);
+    const txt = (main?.textContent || "").replace(/\s+/g, " ").trim().slice(0, 4e3);
     return { url: location.href, title: document.title, text: txt };
   }
   function add(role, text) {
@@ -58,3 +58,4 @@ ${(res.sources || []).join("\n")}`);
 export {
   C2CAIWidget
 };
+//# sourceMappingURL=chunk-JQR7JA5I.js.map

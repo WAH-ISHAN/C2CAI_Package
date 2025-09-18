@@ -1,3 +1,4 @@
+"use strict";
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -35,7 +36,6 @@ module.exports = __toCommonJS(crawler_exports);
 var cheerio = __toESM(require("cheerio"), 1);
 var import_url = require("url");
 async function crawlSite(baseUrl, maxPages = 50, sameDomainOnly = true) {
-  var _a;
   const start = new import_url.URL(baseUrl);
   const q = [start.href];
   const seen = /* @__PURE__ */ new Set();
@@ -46,7 +46,7 @@ async function crawlSite(baseUrl, maxPages = 50, sameDomainOnly = true) {
     seen.add(u);
     try {
       const res = await fetch(u, { headers: { "User-Agent": "C2CAI/0.1" } });
-      if (!res.ok || !((_a = res.headers.get("content-type")) == null ? void 0 : _a.includes("text/html"))) continue;
+      if (!res.ok || !res.headers.get("content-type")?.includes("text/html")) continue;
       const html = await res.text();
       const $ = cheerio.load(html);
       $("script,style,noscript").remove();
@@ -74,3 +74,4 @@ async function crawlSite(baseUrl, maxPages = 50, sameDomainOnly = true) {
 0 && (module.exports = {
   crawlSite
 });
+//# sourceMappingURL=crawler.cjs.map

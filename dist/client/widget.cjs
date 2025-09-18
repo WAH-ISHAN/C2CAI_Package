@@ -1,3 +1,4 @@
+"use strict";
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -45,7 +46,7 @@ function C2CAIWidget(opts) {
   const send = panel.querySelector("#c2cai-send");
   function pageContext() {
     const main = document.querySelector("main") || document.body;
-    const txt = ((main == null ? void 0 : main.textContent) || "").replace(/\s+/g, " ").trim().slice(0, 4e3);
+    const txt = (main?.textContent || "").replace(/\s+/g, " ").trim().slice(0, 4e3);
     return { url: location.href, title: document.title, text: txt };
   }
   function add(role, text) {
@@ -81,3 +82,4 @@ ${(res.sources || []).join("\n")}`);
 0 && (module.exports = {
   C2CAIWidget
 });
+//# sourceMappingURL=widget.cjs.map

@@ -1,6 +1,7 @@
 import {
   C2CAIWidget
-} from "../chunk-B7U3IVDM.js";
+} from "../chunk-JQR7JA5I.js";
 export {
   C2CAIWidget
 };
+//# sourceMappingURL=widget.js.map
