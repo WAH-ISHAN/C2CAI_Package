@@ -216,3 +216,6 @@ Add `c2cai-widget.js` in your **public/**, mount `<div id="c2cai-widget">`, init
 - With backend? → it becomes a true **AI assistant** fetching answers from `/chat`.  
 
 ---
+## License
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+----
