@@ -1,23 +1,26 @@
-import fs from "fs";
-import path from "path";
-import dotenv from "dotenv";
-dotenv.config({ path: ".env.c2cai" });
+// src/config.ts
+import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 
-export type C2CConfig = {
-  site: { baseUrl: string; maxPages: number; sameDomainOnly: boolean };
-  dbPath: string;
-  topK: number;
-  allowLanguages: string[];
+dotenv.config({ path: '.env.c2cai' });
+
+const configPath = path.join(process.cwd(), 'c2cai.config.json');
+const defaultConfig = {
+  openai: { model: 'gpt-4o-mini', temperature: 0 },
+  crawler: { chunkSize: 2000, chunkOverlap: 300, maxPages: 10 },
+  voice: { defaultLang: 'si-LK', languages: ['si-LK', 'en-US', 'ta-IN'] },
+  sales: { enableLeadCapture: true, recommendPrompt: 'Recommend products/services if relevant.' },
+  promptTemplate: 'Context: {context}\nQuestion: {question}\nSales Tip: {salesTip}\nAnswer in detail:'
 };
 
-export function loadConfig(): C2CConfig {
-  const p = path.resolve(process.cwd(), "c2cai.config.json");
-  const cfg = JSON.parse(fs.readFileSync(p, "utf8"));
-  return cfg;
+export let config = defaultConfig;
+
+if (fs.existsSync(configPath)) {
+  const userConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  config = { ...defaultConfig, ...userConfig };
 }
 
-export const env = {
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY!,
-  MODEL: process.env.C2CAI_MODEL || "gpt-4o-mini",
-  EMBED_MODEL: process.env.C2CAI_EMBED_MODEL || "text-embedding-3-small",
-};
+export const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+export const PORT = parseInt(process.env.PORT || '3000');
+export const SITE_URL = process.env.SITE_URL || 'https://example.com';

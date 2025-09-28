@@ -1,50 +1,22 @@
-import Datastore from "nedb-promises";
-import fs from "fs";
-import path from "path";
+// src/db.ts (Simple in-memory DB for vector store persistence – upgrade to SQLite/Pinecone for prod)
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
+import { OpenAIEmbeddings } from "@langchain/openai";
+import { Document } from "@langchain/core/documents";
+import { OPENAI_API_KEY } from './config.js';
 
-const dataDir = path.resolve(".c2cai");
-fs.mkdirSync(dataDir, { recursive: true });
+const embeddings = new OpenAIEmbeddings({ openAIApiKey: OPENAI_API_KEY });
 
-const pagesDB = Datastore.create({ filename: path.join(dataDir, "pages.db"), autoload: true });
-const chatsDB = Datastore.create({ filename: path.join(dataDir, "chats.db"), autoload: true });
+let vectorStore: MemoryVectorStore | null = null;
 
-export type PageRow = {
-  url: string;
-  title: string;
-  content: string;
-  embedding: number[];
-};
-
-export async function upsertPage(p: PageRow) {
-  await pagesDB.update({ url: p.url }, p, { upsert: true });
+export async function initDB(docs: Document[]) {
+  vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddings);
 }
 
-export async function getAllPages(): Promise<PageRow[]> {
-  return await pagesDB.find({});
+export async function retrieveFromDB(query: string, k: number = 4) {
+  if (!vectorStore) throw new Error('DB not initialized');
+  return await vectorStore.similaritySearch(query, k);
 }
 
-export async function logChat(rec: {
-  id: string;
-  ts: number;
-  lang: string;
-  user: string;
-  assistant: string;
-  sources: string[];
-}) {
-  await chatsDB.insert(rec);
-}
-
-// Dummy cosine similarity – same as before
-export function cosineSim(a: number[], b: number[]) {
-  let dot = 0,
-    na = 0,
-    nb = 0;
-  for (let i = 0; i < a.length; i++) {
-    const x = a[i],
-      y = b[i];
-    dot += x * y;
-    na += x * x;
-    nb += y * y;
-  }
-  return dot / (Math.sqrt(na) * Math.sqrt(nb) + 1e-8);
+export function getDB() {
+  return vectorStore;
 }

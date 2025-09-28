@@ -1,40 +1,31 @@
-import express from "express";
-import OpenAI from "openai";
-import { loadConfig, env } from "./config.js";
-import { logChat } from "./db.js";
-import { answerWithRAG } from "./rag.js";
-import crypto from "crypto";
+// src/server.ts
+import express from 'express';
+import { indexSite } from './indexer.js';
+import { generateResponse } from './rag.js';
+import { config, PORT } from './config.js';
+import cors from 'cors'; // npm i cors if needed
 
-export function createC2CAIServer() {
-  const cfg = loadConfig();
-  const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
-  const router = express.Router();
-  router.use(express.json({ limit: "1mb" }));
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.static('public')); // For widget JS
 
-  router.post("/chat", async (req, res) => {
-    try {
-      const { message, page, sessionId } = req.body;
-      const out = await answerWithRAG({
-        client,
-        model: env.MODEL,
-        embedModel: env.EMBED_MODEL,
-        question: message,
-        pageHint: page,
-        allowLangs: cfg.allowLanguages
-      });
-      await logChat({
-        id: sessionId || crypto.randomUUID(),
-        ts: Date.now(),
-        lang: "auto",
-        user: message,
-        assistant: out.answer,
-        sources: out.sources
-      });
-      res.json(out);
-    } catch (e: any) {
-      res.status(500).json({ error: e.message || "server_error" });
-    }
-  });
+// Health check
+app.get('/health', (req, res) => res.send('OK'));
 
-  return router;
-}
+// RAG endpoint for voice proxy
+app.post('/chat', async (req, res) => {
+  const { query, lang } = req.body;
+  try {
+    const response = await generateResponse(query, lang);
+    res.json({ response });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Init on start
+app.listen(PORT, async () => {
+  await indexSite();
+  console.log(`Server running on http://localhost:${PORT}`);
+});

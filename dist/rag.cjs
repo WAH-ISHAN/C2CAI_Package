@@ -30,80 +30,70 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/rag.ts
 var rag_exports = {};
 __export(rag_exports, {
-  answerWithRAG: () => answerWithRAG,
-  pickContext: () => pickContext
+  generateResponse: () => generateResponse
 });
 module.exports = __toCommonJS(rag_exports);
+var import_openai2 = require("@langchain/openai");
+var import_prompts = require("@langchain/core/prompts");
 
 // src/db.ts
-var import_nedb_promises = __toESM(require("nedb-promises"), 1);
+var import_memory = require("langchain/vectorstores/memory");
+var import_openai = require("@langchain/openai");
+
+// src/config.ts
+var import_dotenv = __toESM(require("dotenv"), 1);
 var import_fs = __toESM(require("fs"), 1);
 var import_path = __toESM(require("path"), 1);
-var dataDir = import_path.default.resolve(".c2cai");
-import_fs.default.mkdirSync(dataDir, { recursive: true });
-var pagesDB = import_nedb_promises.default.create({ filename: import_path.default.join(dataDir, "pages.db"), autoload: true });
-var chatsDB = import_nedb_promises.default.create({ filename: import_path.default.join(dataDir, "chats.db"), autoload: true });
-async function getAllPages() {
-  return await pagesDB.find({});
+import_dotenv.default.config({ path: ".env.c2cai" });
+var configPath = import_path.default.join(process.cwd(), "c2cai.config.json");
+var defaultConfig = {
+  openai: { model: "gpt-4o-mini", temperature: 0 },
+  crawler: { chunkSize: 2e3, chunkOverlap: 300, maxPages: 10 },
+  voice: { defaultLang: "si-LK", languages: ["si-LK", "en-US", "ta-IN"] },
+  sales: { enableLeadCapture: true, recommendPrompt: "Recommend products/services if relevant." },
+  promptTemplate: "Context: {context}\nQuestion: {question}\nSales Tip: {salesTip}\nAnswer in detail:"
+};
+var config = defaultConfig;
+if (import_fs.default.existsSync(configPath)) {
+  const userConfig = JSON.parse(import_fs.default.readFileSync(configPath, "utf8"));
+  config = { ...defaultConfig, ...userConfig };
 }
-function cosineSim(a, b) {
-  let dot = 0, na = 0, nb = 0;
-  for (let i = 0; i < a.length; i++) {
-    const x = a[i], y = b[i];
-    dot += x * y;
-    na += x * x;
-    nb += y * y;
-  }
-  return dot / (Math.sqrt(na) * Math.sqrt(nb) + 1e-8);
+var OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+var PORT = parseInt(process.env.PORT || "3000");
+var SITE_URL = process.env.SITE_URL || "https://example.com";
+
+// src/db.ts
+var embeddings = new import_openai.OpenAIEmbeddings({ openAIApiKey: OPENAI_API_KEY });
+var vectorStore = null;
+async function retrieveFromDB(query, k = 4) {
+  if (!vectorStore) throw new Error("DB not initialized");
+  return await vectorStore.similaritySearch(query, k);
 }
 
 // src/rag.ts
-async function pickContext(queryVec, topK = 5) {
-  const pages = await getAllPages();
-  const scored = pages.map((p) => ({ p, s: cosineSim(queryVec, p.embedding) })).sort((a, b) => b.s - a.s).slice(0, topK);
-  return scored.map((x) => x.p);
-}
-async function answerWithRAG(opts) {
-  const { client, model, embedModel, question, pageHint } = opts;
-  const qEmb = await client.embeddings.create({ model: embedModel, input: question });
-  const contextPages = await pickContext(qEmb.data[0].embedding, 5);
-  const ctx = contextPages.map(
-    (p, i) => `# Source ${i + 1}: ${p.title}
-URL: ${p.url}
-${p.content.slice(0, 1200)}`
-  ).join("\n\n");
-  const pageCtx = pageHint?.text ? `Current Page: ${pageHint.title || ""} (${pageHint.url || ""})
-${pageHint.text.slice(0, 1200)}` : "";
-  const system = [
-    "You are C2CAI, a helpful website assistant.",
-    "Use the given sources to answer.",
-    "If you don't know, say you don't know and suggest where to find it.",
-    "Detect user's language and respond in that language (Sinhala/English/Tamil).",
-    "Be concise, friendly, and cite sources by title/URL when helpful."
-  ].join(" ");
-  const messages = [
-    { role: "system", content: system },
-    { role: "user", content: `User question:
-${question}
+var llm = new import_openai2.ChatOpenAI({
+  openAIApiKey: OPENAI_API_KEY,
+  modelName: config.openai.model,
+  temperature: config.openai.temperature
+});
+async function generateResponse(query, lang = "en") {
+  const docs = await retrieveFromDB(query);
+  const context = docs.map((doc) => doc.pageContent).join("\n");
+  const salesTip = config.sales.recommendPrompt;
+  const prompt = import_prompts.ChatPromptTemplate.fromMessages([
+    ["human", `${config.promptTemplate.replace("{salesTip}", salesTip)} Respond in ${lang}.`]
+  ]);
+  const messages = await prompt.formatMessages({ context, question: query });
+  const response = await llm.invoke(messages);
+  if (config.sales.enableLeadCapture && query.toLowerCase().includes("contact") || query.toLowerCase().includes("buy")) {
+    return `${response.content}
 
-Context:
-${ctx}
-
-Page Context:
-${pageCtx}` }
-  ];
-  const resp = await client.chat.completions.create({
-    model,
-    messages,
-    temperature: 0.3
-  });
-  const answer = resp.choices[0]?.message?.content || "Sorry, I couldn't generate an answer.";
-  const sources = contextPages.slice(0, 3).map((p) => `${p.title} \u2014 ${p.url}`);
-  return { answer, sources };
+For more details, share your email!`;
+  }
+  return response.content;
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  answerWithRAG,
-  pickContext
+  generateResponse
 });
 //# sourceMappingURL=rag.cjs.map

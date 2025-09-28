@@ -30,27 +30,37 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/config.ts
 var config_exports = {};
 __export(config_exports, {
-  env: () => env,
-  loadConfig: () => loadConfig
+  OPENAI_API_KEY: () => OPENAI_API_KEY,
+  PORT: () => PORT,
+  SITE_URL: () => SITE_URL,
+  config: () => config
 });
 module.exports = __toCommonJS(config_exports);
+var import_dotenv = __toESM(require("dotenv"), 1);
 var import_fs = __toESM(require("fs"), 1);
 var import_path = __toESM(require("path"), 1);
-var import_dotenv = __toESM(require("dotenv"), 1);
 import_dotenv.default.config({ path: ".env.c2cai" });
-function loadConfig() {
-  const p = import_path.default.resolve(process.cwd(), "c2cai.config.json");
-  const cfg = JSON.parse(import_fs.default.readFileSync(p, "utf8"));
-  return cfg;
-}
-var env = {
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-  MODEL: process.env.C2CAI_MODEL || "gpt-4o-mini",
-  EMBED_MODEL: process.env.C2CAI_EMBED_MODEL || "text-embedding-3-small"
+var configPath = import_path.default.join(process.cwd(), "c2cai.config.json");
+var defaultConfig = {
+  openai: { model: "gpt-4o-mini", temperature: 0 },
+  crawler: { chunkSize: 2e3, chunkOverlap: 300, maxPages: 10 },
+  voice: { defaultLang: "si-LK", languages: ["si-LK", "en-US", "ta-IN"] },
+  sales: { enableLeadCapture: true, recommendPrompt: "Recommend products/services if relevant." },
+  promptTemplate: "Context: {context}\nQuestion: {question}\nSales Tip: {salesTip}\nAnswer in detail:"
 };
+var config = defaultConfig;
+if (import_fs.default.existsSync(configPath)) {
+  const userConfig = JSON.parse(import_fs.default.readFileSync(configPath, "utf8"));
+  config = { ...defaultConfig, ...userConfig };
+}
+var OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+var PORT = parseInt(process.env.PORT || "3000");
+var SITE_URL = process.env.SITE_URL || "https://example.com";
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  env,
-  loadConfig
+  OPENAI_API_KEY,
+  PORT,
+  SITE_URL,
+  config
 });
 //# sourceMappingURL=config.cjs.map

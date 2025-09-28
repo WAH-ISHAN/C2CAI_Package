@@ -1,6 +1,6 @@
 {
   "name": "c2cai",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Website RAG assistant (Sinhala/English/Tamil)",
   "type": "module",
   "main": "./dist/index.js",
@@ -34,19 +34,29 @@
     }
   },
   "dependencies": {
+    "@langchain/community": "^0.3.56",
+    "@langchain/core": "^0.3.77",
+    "@langchain/openai": "^0.6.13",
+    "@langchain/textsplitters": "^0.1.0",
+    "auto-fix-errors": "^1.0.1",
     "cheerio": "^1.0.0-rc.12",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
+    "express": "^4.21.2",
+    "langchain": "^0.3.34",
     "nedb-promises": "^6.2.3",
-    "openai": "^4.55.0"
+    "openai": "^4.55.0",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@types/cheerio": "^0.22.35",
+    "@types/cors": "^2.8.19",
+    "@types/dom-speech-recognition": "^0.0.6",
     "@types/dotenv": "^8.2.0",
     "@types/express": "^4.17.21",
     "@types/node": "^20.11.30",
     "@types/webidl-conversions": "^7.0.3",
     "@types/whatwg-url": "^13.0.0",
+    "@types/xml2js": "^0.4.14",
     "tsup": "^8.0.1",
     "typescript": "^5.5.4"
   },

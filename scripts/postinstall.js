@@ -1,22 +1,18 @@
-#!/usr/bin/env node
-import fs from "fs";
-import path from "path";
-const root = process.env.INIT_CWD || process.cwd();
+// scripts/postinstall.js
+const fs = require('fs');
+const path = require('path');
 
-const envPath = path.join(root, ".env.c2cai");
-const cfgPath = path.join(root, "c2cai.config.json");
-
-if (!fs.existsSync(envPath)) {
-  fs.writeFileSync(envPath, "OPENAI_API_KEY=\nC2CAI_MODEL=gpt-4o-mini\nC2CAI_EMBED_MODEL=text-embedding-3-small\n", "utf8");
-  console.log("Created .env.c2cai");
+console.log('Post-install: Building TypeScript...');
+const { execSync } = require('child_process');
+try {
+  execSync('npm run build', { stdio: 'inherit' });
+} catch (e) {
+  console.warn('Build failed in postinstall, run manually.');
 }
 
-if (!fs.existsSync(cfgPath)) {
-  fs.writeFileSync(cfgPath, JSON.stringify({
-    site: { baseUrl: "https://your-portfolio.com", maxPages: 50, sameDomainOnly: true },
-    dbPath: ".c2cai/data.sqlite",
-    topK: 5,
-    allowLanguages: ["si", "en", "ta"]
-  }, null, 2), "utf8");
-  console.log("Created c2cai.config.json");
+// Create example config if not exists
+const configPath = path.join(__dirname, '..', 'c2cai.config.json');
+if (!fs.existsSync(configPath)) {
+  fs.copyFileSync(path.join(__dirname, '..', '.env.c2cai'), path.join(__dirname, '..', '.env'));
+  console.log('Example .env created. Set your OPENAI_API_KEY.');
 }

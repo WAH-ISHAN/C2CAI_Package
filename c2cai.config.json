@@ -1,14 +1,20 @@
 {
-  "site": {
-    "baseUrl": "https://your-portfolio.com",
-    "maxPages": 50,
-    "sameDomainOnly": true
+  "openai": {
+    "model": "gpt-4o-mini",
+    "temperature": 0
   },
-  "dbPath": ".c2cai/data.sqlite",
-  "topK": 5,
-  "allowLanguages": [
-    "si",
-    "en",
-    "ta"
-  ]
+  "crawler": {
+    "chunkSize": 2000,
+    "chunkOverlap": 300,
+    "maxPages": 10
+  },
+  "voice": {
+    "defaultLang": "si-LK",
+    "languages": ["si-LK", "en-US", "ta-IN"]
+  },
+  "sales": {
+    "enableLeadCapture": true,
+    "recommendPrompt": "Recommend products/services if relevant."
+  },
+  "promptTemplate": "Context: {context}\nQuestion: {question}\nSales Tip: {salesTip}\nAnswer in detail:"
 }

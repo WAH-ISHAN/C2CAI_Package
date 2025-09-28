@@ -1,85 +1,102 @@
 "use strict";
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // src/client/widget.ts
-var widget_exports = {};
-__export(widget_exports, {
-  C2CAIWidget: () => C2CAIWidget
-});
-module.exports = __toCommonJS(widget_exports);
-function C2CAIWidget(opts) {
-  const state = { open: false, sessionId: crypto.randomUUID() };
-  const btn = document.createElement("button");
-  btn.textContent = "\u{1F4AC} Chat";
-  Object.assign(btn.style, { position: "fixed", bottom: "20px", right: "20px", zIndex: "9999", padding: "10px 14px", borderRadius: "999px", background: "#111", color: "#fff" });
-  document.body.appendChild(btn);
-  const panel = document.createElement("div");
-  panel.innerHTML = `<div style="width:320px;height:420px;background:#fff;position:fixed;bottom:70px;right:20px;border:1px solid #ddd;border-radius:12px;display:none;flex-direction:column;overflow:hidden;font-family:system-ui">
-    <div style="padding:10px;border-bottom:1px solid #eee;font-weight:600">C2CAI Assistant</div>
-    <div id="c2cai-log" style="flex:1;padding:10px;overflow:auto;font-size:14px"></div>
-    <div style="display:flex;border-top:1px solid #eee">
-      <input id="c2cai-in" style="flex:1;padding:10px;border:0;outline:none" placeholder="Ask me anything..." />
-      <button id="c2cai-send" style="padding:10px 12px;border:0;background:#111;color:#fff">Send</button>
-    </div>
-  </div>`;
-  Object.assign(panel.style, { zIndex: "9999" });
-  document.body.appendChild(panel);
-  const box = panel.firstElementChild;
-  const log = panel.querySelector("#c2cai-log");
-  const input = panel.querySelector("#c2cai-in");
-  const send = panel.querySelector("#c2cai-send");
-  function pageContext() {
-    const main = document.querySelector("main") || document.body;
-    const txt = (main?.textContent || "").replace(/\s+/g, " ").trim().slice(0, 4e3);
-    return { url: location.href, title: document.title, text: txt };
+var VoiceWidget = class {
+  // Customize via opts
+  constructor(containerId = "c2cai-widget") {
+    this.containerId = containerId;
+    this.recognition = null;
+    this.synthesis = window.speechSynthesis;
+    this.serverUrl = "http://localhost:3000";
+    this.initWidget();
   }
-  function add(role, text) {
-    const div = document.createElement("div");
-    div.style.margin = "6px 0";
-    div.innerHTML = `<div style="font-weight:600">${role}</div><div>${text}</div>`;
-    log.appendChild(div);
-    log.scrollTop = log.scrollHeight;
+  initWidget() {
+    const container = document.getElementById(this.containerId);
+    if (!container) {
+      console.warn(`Container with id "${this.containerId}" not found.`);
+      return;
+    }
+    const startBtn = document.createElement("button");
+    startBtn.textContent = "Start Voice Assistant";
+    startBtn.onclick = () => this.startListening();
+    container.appendChild(startBtn);
+    const defaultLang = "si-LK";
+    const userLang = navigator.language || defaultLang;
+    this.setupRecognition(userLang);
   }
-  btn.onclick = () => {
-    state.open = !state.open;
-    box.style.display = state.open ? "flex" : "none";
-  };
-  send.onclick = async () => {
-    const msg = input.value.trim();
-    if (!msg) return;
-    add("You", msg);
-    input.value = "";
-    const res = await fetch(opts.endpoint + "/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: msg, page: pageContext(), sessionId: state.sessionId })
-    }).then((r) => r.json());
-    add("C2CAI", `${res.answer}
-
-Sources:
-${(res.sources || []).join("\n")}`);
-  };
-  ["popstate", "hashchange"].forEach((ev) => window.addEventListener(ev, () => {
-  }));
-}
-// Annotate the CommonJS export names for ESM import in node:
-0 && (module.exports = {
-  C2CAIWidget
-});
+  setupRecognition(lang) {
+    const SpeechRecognitionConstructor = window.webkitSpeechRecognition || window.SpeechRecognition;
+    if (SpeechRecognitionConstructor) {
+      this.recognition = new SpeechRecognitionConstructor();
+      this.recognition.continuous = true;
+      this.recognition.interimResults = false;
+      this.recognition.lang = lang;
+      this.recognition.onresult = (event) => {
+        const lastResultIndex = event.results.length - 1;
+        const lastResult = event.results[lastResultIndex];
+        if (lastResult.isFinal) {
+          const query = lastResult[0].transcript;
+          this.handleQuery(query);
+        }
+      };
+      this.recognition.onerror = (event) => {
+        console.error("Voice error:", event.error);
+      };
+    } else {
+      console.warn("SpeechRecognition not supported in this browser.");
+    }
+  }
+  async handleQuery(query) {
+    if (!query.trim()) return;
+    try {
+      const res = await fetch(`${this.serverUrl}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query,
+          lang: this.recognition?.lang || "en-US"
+        })
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      const data = await res.json();
+      const response = data.response || "No response received.";
+      this.speak(response, this.recognition?.lang || "en-US");
+    } catch (e) {
+      console.error("Handle query error:", e);
+      this.speak("Error occurred. Please try again.");
+    }
+  }
+  speak(text, lang) {
+    if (!text) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang;
+    utterance.volume = 1;
+    utterance.rate = 0.9;
+    this.synthesis.speak(utterance);
+  }
+  startListening() {
+    if (this.recognition) {
+      const welcomeLang = this.recognition.lang || "en-US";
+      this.speak("\u0D86\u0DBA\u0DD4\u0DB6\u0DDD\u0DC0\u0DB1\u0DCA! \u0DB8\u0DA7 \u0D9A\u0DAD\u0DCF \u0D9A\u0DBB\u0DB1\u0DCA\u0DB1.", welcomeLang);
+      this.recognition.start();
+    } else {
+      alert("Voice recognition not supported in this browser. Please use Chrome or Edge.");
+    }
+  }
+  stopListening() {
+    if (this.recognition) {
+      this.recognition.stop();
+    }
+    window.speechSynthesis.cancel();
+  }
+};
+window.initC2CAI = (opts) => {
+  if (opts?.serverUrl) {
+    console.warn("serverUrl option logged; implement instance setting if required.");
+  }
+  new VoiceWidget(opts?.containerId);
+};
 //# sourceMappingURL=widget.cjs.map

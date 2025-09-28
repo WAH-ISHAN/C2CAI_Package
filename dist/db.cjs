@@ -30,43 +30,53 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/db.ts
 var db_exports = {};
 __export(db_exports, {
-  cosineSim: () => cosineSim,
-  getAllPages: () => getAllPages,
-  logChat: () => logChat,
-  upsertPage: () => upsertPage
+  getDB: () => getDB,
+  initDB: () => initDB,
+  retrieveFromDB: () => retrieveFromDB
 });
 module.exports = __toCommonJS(db_exports);
-var import_nedb_promises = __toESM(require("nedb-promises"), 1);
+var import_memory = require("langchain/vectorstores/memory");
+var import_openai = require("@langchain/openai");
+
+// src/config.ts
+var import_dotenv = __toESM(require("dotenv"), 1);
 var import_fs = __toESM(require("fs"), 1);
 var import_path = __toESM(require("path"), 1);
-var dataDir = import_path.default.resolve(".c2cai");
-import_fs.default.mkdirSync(dataDir, { recursive: true });
-var pagesDB = import_nedb_promises.default.create({ filename: import_path.default.join(dataDir, "pages.db"), autoload: true });
-var chatsDB = import_nedb_promises.default.create({ filename: import_path.default.join(dataDir, "chats.db"), autoload: true });
-async function upsertPage(p) {
-  await pagesDB.update({ url: p.url }, p, { upsert: true });
+import_dotenv.default.config({ path: ".env.c2cai" });
+var configPath = import_path.default.join(process.cwd(), "c2cai.config.json");
+var defaultConfig = {
+  openai: { model: "gpt-4o-mini", temperature: 0 },
+  crawler: { chunkSize: 2e3, chunkOverlap: 300, maxPages: 10 },
+  voice: { defaultLang: "si-LK", languages: ["si-LK", "en-US", "ta-IN"] },
+  sales: { enableLeadCapture: true, recommendPrompt: "Recommend products/services if relevant." },
+  promptTemplate: "Context: {context}\nQuestion: {question}\nSales Tip: {salesTip}\nAnswer in detail:"
+};
+var config = defaultConfig;
+if (import_fs.default.existsSync(configPath)) {
+  const userConfig = JSON.parse(import_fs.default.readFileSync(configPath, "utf8"));
+  config = { ...defaultConfig, ...userConfig };
 }
-async function getAllPages() {
-  return await pagesDB.find({});
+var OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+var PORT = parseInt(process.env.PORT || "3000");
+var SITE_URL = process.env.SITE_URL || "https://example.com";
+
+// src/db.ts
+var embeddings = new import_openai.OpenAIEmbeddings({ openAIApiKey: OPENAI_API_KEY });
+var vectorStore = null;
+async function initDB(docs) {
+  vectorStore = await import_memory.MemoryVectorStore.fromDocuments(docs, embeddings);
 }
-async function logChat(rec) {
-  await chatsDB.insert(rec);
+async function retrieveFromDB(query, k = 4) {
+  if (!vectorStore) throw new Error("DB not initialized");
+  return await vectorStore.similaritySearch(query, k);
 }
-function cosineSim(a, b) {
-  let dot = 0, na = 0, nb = 0;
-  for (let i = 0; i < a.length; i++) {
-    const x = a[i], y = b[i];
-    dot += x * y;
-    na += x * x;
-    nb += y * y;
-  }
-  return dot / (Math.sqrt(na) * Math.sqrt(nb) + 1e-8);
+function getDB() {
+  return vectorStore;
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  cosineSim,
-  getAllPages,
-  logChat,
-  upsertPage
+  getDB,
+  initDB,
+  retrieveFromDB
 });
 //# sourceMappingURL=db.cjs.map
