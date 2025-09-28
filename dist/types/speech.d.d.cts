@@ -1,33 +1,33 @@
 // src/types/web-speech-recognition.ts
-export interface SpeechRecognitionAlternative {
+interface SpeechRecognitionAlternative {
   transcript: string;
   confidence: number;
 }
 
-export interface SpeechRecognitionResult {
+interface SpeechRecognitionResult {
   isFinal: boolean;
   length: number;
   item(index: number): SpeechRecognitionAlternative;
   [index: number]: SpeechRecognitionAlternative;
 }
 
-export interface SpeechRecognitionResultList {
+interface SpeechRecognitionResultList {
   length: number;
   item(index: number): SpeechRecognitionResult;
   [index: number]: SpeechRecognitionResult;
 }
 
-export interface SpeechRecognitionEvent extends Event {
+interface SpeechRecognitionEvent extends Event {
   readonly resultIndex: number;
   readonly results: SpeechRecognitionResultList;
 }
 
-export interface SpeechRecognitionErrorEvent extends Event {
+interface SpeechRecognitionErrorEvent extends Event {
   readonly error: string;
   readonly message: string;
 }
 
-export interface SpeechRecognition extends EventTarget {
+interface SpeechRecognition extends EventTarget {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
@@ -42,3 +42,5 @@ export interface SpeechRecognition extends EventTarget {
   stop(): void;
   abort?(): void;
 }
+
+export type { SpeechRecognition, SpeechRecognitionAlternative, SpeechRecognitionErrorEvent, SpeechRecognitionEvent, SpeechRecognitionResult, SpeechRecognitionResultList };

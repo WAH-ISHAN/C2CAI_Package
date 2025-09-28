@@ -378,7 +378,11 @@ app.post("/chat", async (req, res) => {
     const response = await generateResponse(query, lang);
     res.json({ response });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    if (e instanceof Error) {
+      res.status(500).json({ error: e.message });
+    } else {
+      res.status(500).json({ error: String(e) });
+    }
   }
 });
 app.listen(PORT, async () => {

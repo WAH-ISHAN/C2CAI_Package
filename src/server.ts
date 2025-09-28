@@ -19,10 +19,15 @@ app.post('/chat', async (req, res) => {
   try {
     const response = await generateResponse(query, lang);
     res.json({ response });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      res.status(500).json({ error: e.message });
+    } else {
+      res.status(500).json({ error: String(e) });
+    }
   }
 });
+
 
 // Init on start
 app.listen(PORT, async () => {

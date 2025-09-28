@@ -2,20 +2,16 @@
 
 // src/client/widget.ts
 var VoiceWidget = class {
-  // Customize via opts
-  constructor(containerId = "c2cai-widget") {
+  constructor(containerId = "c2cai-widget", opts) {
     this.containerId = containerId;
     this.recognition = null;
     this.synthesis = window.speechSynthesis;
-    this.serverUrl = "http://localhost:3000";
+    this.serverUrl = opts?.serverUrl ?? "http://localhost:3000";
     this.initWidget();
   }
   initWidget() {
     const container = document.getElementById(this.containerId);
-    if (!container) {
-      console.warn(`Container with id "${this.containerId}" not found.`);
-      return;
-    }
+    if (!container) return;
     const startBtn = document.createElement("button");
     startBtn.textContent = "Start Voice Assistant";
     startBtn.onclick = () => this.startListening();
@@ -25,26 +21,24 @@ var VoiceWidget = class {
     this.setupRecognition(userLang);
   }
   setupRecognition(lang) {
-    const SpeechRecognitionConstructor = window.webkitSpeechRecognition || window.SpeechRecognition;
-    if (SpeechRecognitionConstructor) {
-      this.recognition = new SpeechRecognitionConstructor();
-      this.recognition.continuous = true;
-      this.recognition.interimResults = false;
-      this.recognition.lang = lang;
-      this.recognition.onresult = (event) => {
-        const lastResultIndex = event.results.length - 1;
-        const lastResult = event.results[lastResultIndex];
-        if (lastResult.isFinal) {
-          const query = lastResult[0].transcript;
-          this.handleQuery(query);
-        }
-      };
-      this.recognition.onerror = (event) => {
-        console.error("Voice error:", event.error);
-      };
-    } else {
-      console.warn("SpeechRecognition not supported in this browser.");
-    }
+    const SRClass = window.webkitSpeechRecognition || window.SpeechRecognition;
+    if (!SRClass) return;
+    const recognition = new SRClass();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = lang;
+    recognition.onresult = (event) => {
+      const lastResultIndex = event.results.length - 1;
+      const lastResult = event.results[lastResultIndex];
+      if (lastResult?.isFinal) {
+        const query = lastResult[0]?.transcript ?? "";
+        if (query.trim()) this.handleQuery(query);
+      }
+    };
+    recognition.onerror = (event) => {
+      console.error("Voice error:", event.error);
+    };
+    this.recognition = recognition;
   }
   async handleQuery(query) {
     if (!query.trim()) return;
@@ -52,25 +46,20 @@ var VoiceWidget = class {
       const res = await fetch(`${this.serverUrl}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query,
-          lang: this.recognition?.lang || "en-US"
-        })
+        body: JSON.stringify({ query, lang: this.recognition?.lang || "en-US" })
       });
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       const response = data.response || "No response received.";
       this.speak(response, this.recognition?.lang || "en-US");
     } catch (e) {
       console.error("Handle query error:", e);
-      this.speak("Error occurred. Please try again.");
+      this.speak("Error occurred. Please try again.", this.recognition?.lang || "en-US");
     }
   }
   speak(text, lang) {
     if (!text) return;
-    window.speechSynthesis.cancel();
+    this.synthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = lang;
     utterance.volume = 1;
@@ -87,16 +76,11 @@ var VoiceWidget = class {
     }
   }
   stopListening() {
-    if (this.recognition) {
-      this.recognition.stop();
-    }
+    if (this.recognition) this.recognition.stop();
     window.speechSynthesis.cancel();
   }
 };
 window.initC2CAI = (opts) => {
-  if (opts?.serverUrl) {
-    console.warn("serverUrl option logged; implement instance setting if required.");
-  }
-  new VoiceWidget(opts?.containerId);
+  new VoiceWidget(opts?.containerId ?? "c2cai-widget", { serverUrl: opts?.serverUrl });
 };
 //# sourceMappingURL=widget.cjs.map
