@@ -1,0 +1,21 @@
+name: Publish C2CAI Package
+
+on:
+  push:
+    branches:
+      - master  # master branch එකට push කරන්නෙ publish trigger වෙනවා
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm-publish   # ඔබේ GitHub Environment name
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm install
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}  # NPM token secret
